@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <link rel="stylesheet" type="text/css" href="./css/normalize.css"/>
+  <title>Browser</title>
+  <style>
+    html, body {
+      background-color: white;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    #tabs {
+      -webkit-app-region: drag;
+      height: 38px;
+      line-height: 38px;
+      font-size: 0.75rem;
+      background: rgb(225, 225, 225);
+      padding-top: 6px;
+      padding-left: 76px;
+      padding-right: 6px;
+      display: flex;
+      overflow: hidden;
+    }
+
+    .tab {
+      -webkit-app-region: no-drag;
+      background: white;
+      flex: 1;
+      max-width: 224px;
+      height: 32px;
+      display: flex;
+      line-height: 20px;
+      padding: 6px 12px;
+      font-weight: 500;
+    }
+
+    .tab.inactive {
+      font-weight: 300;
+      background-color: rgba(255, 255, 255, 0.5);
+      box-shadow: none;
+    }
+
+    .tab:not(.inactive) + .tab.inactive {
+      box-shadow: none;
+      border: none;
+    }
+
+    .tab.inactive:not(:first-of-type) {
+      border-left: 1px solid rgba(0,0,0,0.075);
+    }
+
+    nav {
+      height: 36px;
+      line-height: 36px;
+      font-size: 0.75rem;
+      background: #FFFFFF;
+      padding: 4px 6px;
+      display: flex;
+      border-bottom: 1px solid rgba(0,0,0,0.040);
+    }
+
+    nav input {
+      display: inline-block;
+      flex: 1;
+      height: 28px;
+      line-height: 28px;
+      padding-left: 8px;
+      padding-right: 8px;
+      margin: 0 6px;
+      border: 0;
+      background-color: rgba(0,0,0,0.05);
+      border-radius: 8px;
+      color: #404040;
+      font: inherit;
+      outline: none;
+    }
+
+    nav input:focus {
+      box-shadow: 0 0 0 1px #1447ffab;
+    }
+
+    nav .button {
+      display: inline-block;
+      width: 28px;
+      height: 28px;
+      padding: 6px;
+      color: #404040;
+      border-radius: 8px;
+      will-change: box-shadow, background-color;
+      transition: background-color 200ms ease-in-out;
+    }
+
+    .button.loading .reload-icon {
+      display: none;
+    }
+
+    .button:not(.loading) .cancel-icon {
+      display: none;
+    }
+
+    .button.disabled {
+      opacity: 0.5;
+    }
+
+    .button .right {
+      float: right;
+    }
+
+    .button:hover:not(.disabled) {
+      background-color: rgba(0,0,0,0.05);
+    }
+
+    .button svg {
+      display: flex;
+    }
+  </style>
+</head>
+<script>
+  const $ = (q) => document.querySelector(q)
+  const { remote, ipcRenderer, webFrame } = require('electron')
+
+  webFrame.setVisualZoomLevelLimits(1, 1)
+  webFrame.setLayoutZoomLevelLimits(0, 0)
+
+  const win = remote.getCurrentWindow()
+  const frame = win.getBrowserView()
+
+  const toggleBackForward = () => {
+    if (frame.webContents.canGoBack()) {
+      $('.button.back').classList.remove('disabled')
+    } else {
+      $('.button.back').classList.add('disabled')
+    }
+
+    if (frame.webContents.canGoForward()) {
+      $('.button.forward').classList.remove('disabled')
+    } else {
+      $('.button.forward').classList.add('disabled')
+    }
+  }
+
+  $('html').addEventListener('keyup', (event) => {
+    if (event.code === 'Enter' && document.activeElement === $('#url')) {
+      if (document.activeElement.value !== frame.webContents.getURL()) {
+        frame.webContents.loadURL(document.activeElement.value)
+      }
+    }
+  })
+  
+
+  frame.webContents.on('will-navigate', () => {
+    toggleBackForward()
+  })
+
+  frame.webContents.on('did-navigate-in-page', () => {
+    toggleBackForward()
+  })
+
+  frame.webContents.on('did-navigate', async (event, url) => {
+    $('#url').value = url
+    toggleBackForward()
+  })
+
+  frame.webContents.on('did-start-loading', () => {
+    $('.button.reload').classList.add('loading')
+    toggleBackForward()
+  })
+
+  frame.webContents.on('did-stop-loading', () => {
+    $('.button.reload').classList.remove('loading')
+    toggleBackForward()
+  })
+
+  document.addEventListener('DOMContentLoaded', () => {
+    $('.button.back').addEventListener('click', () => {
+      frame.webContents.goBack()
+    })
+
+    $('.button.forward').addEventListener('click', () => {
+      frame.webContents.goForward()
+    })
+
+    $('.button.reload').addEventListener('click', (e) => {
+      if (!e.target.classList.contains('disabled')) {
+        frame.webContents.reload()
+      }
+    })
+
+    $('.button.menu').addEventListener('click', (e) => {
+      ipcRenderer.send('browser-menu')
+    })
+
+    toggleBackForward()
+  })
+</script>
+<body>
+  <div id="tabs">
+    <div class="tab">
+      Electron
+    </div>
+    <div class="tab inactive">
+      Google
+    </div>
+    <div class="tab inactive">
+      Google
+    </div>
+  </div>
+  <nav>
+    <div class="button back">
+      <svg viewBox="0 0 24 24" width="16" height="16"><title>minimal left</title><g stroke-linecap="round" stroke-linejoin="round" stroke-width="2" fill="currentColor" stroke="currentColor"><polyline fill="none" stroke="currentColor" stroke-miterlimit="10" points="17,2 7,12 17,22 " transform="translate(0, 0)"></polyline></g></svg>
+    </div>
+    <div class="button forward">
+      <svg viewBox="0 0 24 24" width="16" height="16"><title>minimal right</title><g stroke-linecap="round" stroke-linejoin="round" stroke-width="2" fill="currentColor" stroke="currentColor"><polyline fill="none" stroke="currentColor" stroke-miterlimit="10" points="7,2 17,12 7,22 " transform="translate(0, 0)"></polyline></g></svg>
+    </div>
+    <div class="button reload">
+      <svg class="reload-icon" viewBox="0 0 24 24" width="16" height="16"><title>refresh 68</title><g stroke-linecap="round" stroke-linejoin="round" stroke-width="2" fill="currentColor" stroke="currentColor"><path data-cap="butt" fill="none" stroke="currentColor" stroke-miterlimit="10" d="M22,12c0,5.5-4.5,10-10,10 S2,17.5,2,12S6.5,2,12,2c3.9,0,7.3,2.2,8.9,5.5"></path> <polyline fill="none" stroke="currentColor" stroke-miterlimit="10" points="21.8,1.7 21,7.6 15,6.8 "></polyline></g></svg>
+      <svg class="cancel-icon" viewBox="0 0 24 24" width="16" height="16"><title>e remove</title><g stroke-linecap="round" stroke-linejoin="round" stroke-width="2" fill="currentColor" stroke="currentColor"><line fill="none" stroke="currentColor" stroke-miterlimit="10" x1="19" y1="5" x2="5" y2="19"></line> <line fill="none" stroke="currentColor" stroke-miterlimit="10" x1="19" y1="19" x2="5" y2="5"></line></g></svg>
+    </div>
+    <input id="url" type="url" value="https://electronjs.org/"/>
+    <div class="button menu">
+      <svg viewBox="0 0 24 24" width="16" height="16"><title>menu 34</title><g stroke-linecap="round" stroke-linejoin="round" stroke-width="2" fill="currentColor" stroke="currentColor"><line data-color="color-2" fill="none" stroke-miterlimit="10" x1="1" y1="12" x2="23" y2="12"></line> <line fill="none" stroke="currentColor" stroke-miterlimit="10" x1="1" y1="5" x2="23" y2="5"></line> <line fill="none" stroke="currentColor" stroke-miterlimit="10" x1="1" y1="19" x2="23" y2="19"></line></g></svg>
+    </div>
+  </nav>
+</body>
+</html>

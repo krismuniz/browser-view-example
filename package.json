@@ -1,0 +1,26 @@
+{
+  "name": "browser-view-example",
+  "description": "An example (unfinished) browser built with BrowserView and child windows",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "electron ./app/main.js --log-net-logpath",
+    "build": "electron-builder"
+  },
+  "author": "Kristian Muñiz <contact@krismuniz.com> (http://www.krismuniz.com)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/krismuniz/browser-view-example.git"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^3.0.10"
+  },
+  "dependencies": {
+    "dotenv": "5.0.1",
+    "electron-context-menu": "^0.10.0",
+    "esm": "3.0.18",
+    "ms": "^2.1.1"
+  }
+}
